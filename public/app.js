@@ -121,6 +121,12 @@ const elements = {
   btnViewDetails: document.getElementById('btn-view-details'),
   btnDemoStreams: document.getElementById('btn-demo-streams'),
   btnCustomStream: document.getElementById('btn-custom-stream'),
+  btnOpenM3u: document.getElementById('btn-open-m3u'),
+  m3uModal: document.getElementById('m3u-playlist-modal'),
+  closeM3uModal: document.getElementById('close-m3u-modal'),
+  btnCloseM3uFooter: document.getElementById('btn-close-m3u-footer'),
+  btnCopyM3uUrl: document.getElementById('btn-copy-m3u-url'),
+  m3uUrlInput: document.getElementById('m3u-url-input'),
   btnOpenApiExplorer: document.getElementById('btn-open-api-explorer'),
   channelsGrid: document.getElementById('channels-grid'),
   channelSearch: document.getElementById('channel-search'),
@@ -260,6 +266,45 @@ function setupEventListeners() {
         alert('Subscriber token saved! Retrying stream...');
         if (state.activeChannel) selectChannel(state.activeChannel, true);
       }
+    });
+  }
+
+  if (elements.btnOpenM3u) {
+    elements.btnOpenM3u.addEventListener('click', () => {
+      const fullM3uUrl = `${window.location.origin}/playlist.m3u`;
+      if (elements.m3uUrlInput) elements.m3uUrlInput.value = fullM3uUrl;
+      const downloadBtn = document.getElementById('btn-download-m3u');
+      if (downloadBtn) downloadBtn.href = fullM3uUrl;
+      const directBtn = document.getElementById('btn-open-m3u-direct');
+      if (directBtn) directBtn.href = fullM3uUrl;
+      if (elements.m3uModal) elements.m3uModal.style.display = 'flex';
+    });
+  }
+
+  if (elements.closeM3uModal) {
+    elements.closeM3uModal.addEventListener('click', () => {
+      if (elements.m3uModal) elements.m3uModal.style.display = 'none';
+    });
+  }
+
+  if (elements.btnCloseM3uFooter) {
+    elements.btnCloseM3uFooter.addEventListener('click', () => {
+      if (elements.m3uModal) elements.m3uModal.style.display = 'none';
+    });
+  }
+
+  if (elements.btnCopyM3uUrl) {
+    elements.btnCopyM3uUrl.addEventListener('click', () => {
+      const url = elements.m3uUrlInput?.value || `${window.location.origin}/playlist.m3u`;
+      navigator.clipboard.writeText(url).then(() => {
+        const textSpan = document.getElementById('copy-m3u-btn-text');
+        if (textSpan) {
+          textSpan.textContent = 'Copied! ✓';
+          setTimeout(() => { textSpan.textContent = 'Copy'; }, 2000);
+        }
+      }).catch(() => {
+        alert('URL copied: ' + url);
+      });
     });
   }
 

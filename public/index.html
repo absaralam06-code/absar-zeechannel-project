@@ -39,6 +39,10 @@
       </div>
 
       <div class="header-right">
+        <button id="btn-open-m3u" class="header-action-btn highlight" title="OTT Navigator / M3U Playlist">
+          <i data-lucide="tv"></i>
+          <span>M3U Playlist</span>
+        </button>
         <button id="btn-demo-streams" class="header-action-btn secondary" title="Switch Broadcast">
           <i data-lucide="radio"></i>
           <span>Live Streams</span>
@@ -47,7 +51,7 @@
           <i data-lucide="link"></i>
           <span>Custom URL</span>
         </button>
-        <button id="btn-open-api-explorer" class="header-action-btn highlight" title="API Explorer">
+        <button id="btn-open-api-explorer" class="header-action-btn secondary" title="API Explorer">
           <i data-lucide="terminal"></i>
           <span>API Explorer</span>
         </button>
@@ -194,6 +198,55 @@
       </div>
     </section>
   </main>
+
+  <div class="modal-backdrop" id="m3u-playlist-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px; font-size: 16px;"><i data-lucide="tv" style="color: #38bdf8;"></i> OTT Navigator & IPTV Playlist</h3>
+        <button class="modal-close-btn" id="close-m3u-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Use this dynamic M3U playlist in <strong>OTT Navigator IPTV</strong>, <strong>TiviMate</strong>, <strong>VLC</strong>, or <strong>FireStick</strong> to stream 47+ live TV channels with logos and categories.</p>
+        
+        <div class="input-group" style="margin-top: 14px;">
+          <label for="m3u-url-input">M3U Playlist URL (for OTT Navigator)</label>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <input type="text" id="m3u-url-input" readonly style="flex: 1; font-family: monospace; font-size: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-glass); padding: 10px 12px; border-radius: var(--radius-sm); color: #38bdf8;">
+            <button class="btn primary" id="btn-copy-m3u-url" style="white-space: nowrap;">
+              <i data-lucide="copy"></i>
+              <span id="copy-m3u-btn-text">Copy</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <a id="btn-download-m3u" href="/playlist.m3u" download="zee5_live_channels.m3u" class="btn secondary" style="text-decoration: none; font-size: 12px; padding: 7px 14px;">
+            <i data-lucide="download"></i>
+            <span>Download .M3U File</span>
+          </a>
+          <a id="btn-open-m3u-direct" href="/playlist.m3u" target="_blank" class="btn secondary" style="text-decoration: none; font-size: 12px; padding: 7px 14px;">
+            <i data-lucide="external-link"></i>
+            <span>View Raw M3U</span>
+          </a>
+        </div>
+
+        <div style="margin-top: 18px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); padding: 14px;">
+          <h4 style="font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="smartphone"></i> How to Add to OTT Navigator IPTV:
+          </h4>
+          <ol style="font-size: 12px; color: var(--text-muted); line-height: 1.6; padding-left: 18px; margin: 0;">
+            <li>Open <strong>OTT Navigator IPTV</strong> on your Android Phone, Android TV, or Fire TV Stick.</li>
+            <li>Navigate to <strong>Settings (⚙️) &rarr; Provider &rarr; Add Provider &rarr; Playlist (M3U)</strong>.</li>
+            <li>Paste the <strong>M3U URL</strong> from above, type any name (e.g. <em>Zee Live</em>), and click <strong>Apply</strong>.</li>
+            <li>All 47+ live channels will load automatically with logos and channel categories!</li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn secondary" id="btn-close-m3u-footer">Close</button>
+      </div>
+    </div>
+  </div>
 
   <div class="modal-backdrop" id="custom-stream-modal" style="display: none;">
     <div class="modal-card">

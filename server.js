@@ -379,22 +379,142 @@ app.get('/api/stream/:channelId', async (req, res) => {
   }
 });
 
-app.get('/api/live-channels', (req, res) => {
-  res.json({
-    success: true,
-    channels: [
-      { id: '0-9-zeenews', title: 'Zee News Live HD', genre: 'News', lang: 'hi', badge: 'LIVE 24x7' },
-      { id: '0-9-aajtak', title: 'Aaj Tak Live HD', genre: 'News', lang: 'hi', badge: 'LIVE 24x7' },
-      { id: '0-9-indiatoday', title: 'India Today Live HD', genre: 'News', lang: 'en', badge: 'LIVE 24x7' },
-      { id: '0-9-zeerajasthannews', title: 'Zee Rajasthan News', genre: 'News', lang: 'hi', badge: 'LIVE 24x7' },
-      { id: '0-9-9z583538', title: 'Zee News Telugu', genre: 'News', lang: 'te', badge: 'LIVE 24x7' },
-      { id: '0-9-9z51072553', title: 'Zee Cine Classic', genre: 'Movie', lang: 'hi', badge: 'MOVIES LIVE' },
-      { id: '0-9-9z51072556', title: 'Zee Comedy Nation', genre: 'Comedy', lang: 'hi', badge: 'COMEDY LIVE' },
-      { id: '0-9-9z51072894', title: 'Zee South Flix', genre: 'Entertainment', lang: 'hi', badge: 'ACTION LIVE' },
-      { id: '0-9-9z51072892', title: 'Zee Dil Se', genre: 'Entertainment', lang: 'hi', badge: 'ROMANCE LIVE' },
-      { id: '0-9-9z51072893', title: 'Zee Horror Nights', genre: 'Entertainment', lang: 'hi', badge: 'HORROR LIVE' }
-    ]
-  });
+const VERIFIED_PLAYABLE_IDS = new Set([
+  '0-9-9z51072894', '0-9-9z51072893', '0-9-9z51072892', '0-9-9z51072556', '0-9-9z51072553',
+  '0-9-zeeaction', '0-9-zeeanmolcinema', '0-9-bigganga', '0-9-216', '0-9-bigmagic_1786965389',
+  '0-9-zeeanmol', '0-9-zeenews', '0-9-aajtak', '0-9-indiatoday', '0-9-wion', '0-9-zeebusiness',
+  '0-9-zeehindustan', '0-9-zeerajasthannews', '0-9-zeepunjabharyanahima', '0-9-channel_265145625',
+  '0-9-zeemadhyapradeshchat', '0-9-zeebiharjharkhand', '0-9-zeekalinganews', '0-9-9z583538',
+  '0-9-9z583537', '0-9-zee24taas', '0-9-zee24kalak', '0-9-24ghantatv', '0-9-251', '0-9-257',
+  '0-9-258', '0-9-259', '0-9-260', '0-9-378', '0-9-200', '0-9-201', '0-9-261', '0-9-9z5942782',
+  '0-9-9z5942783', '0-9-9z5942784', '0-9-9z5942785', '0-9-9z5938346', '0-9-9z5938349',
+  '0-9-9z5938347', '0-9-9z5938351', '0-9-9z5938345', '0-9-9z5946518'
+]);
+
+function formatChannelTitle(rawTitle, id) {
+  if (!rawTitle) return id;
+  const nameMap = {
+    '0-9-9z51072894': 'Zee South Flix HD',
+    '0-9-9z51072893': 'Zee Horror Nights HD',
+    '0-9-9z51072892': 'Zee Dil Se HD',
+    '0-9-9z51072553': 'Zee Cine Classic HD',
+    '0-9-9z51072556': 'Zee Comedy Nation HD',
+    '0-9-channel_265145625': 'Zee Salaam Live',
+    '0-9-9z583538': 'Zee Telugu News Live',
+    '0-9-9z583537': 'Zee Kannada News Live',
+    '0-9-24ghantatv': 'Zee 24 Ghanta Bengali',
+    '0-9-216': 'Zee Ganga HD',
+    '0-9-251': 'Zee 24 Taas Live',
+    '0-9-257': 'Zee Rajasthan News',
+    '0-9-258': 'Zee Bihar Jharkhand News',
+    '0-9-259': 'Zee MP CG News',
+    '0-9-260': 'Zee Uttar Pradesh UK',
+    '0-9-261': 'Zee Business Live',
+    '0-9-378': 'Zee 24 Kalak Gujarati',
+    '0-9-200': 'Zee Hindustan Live',
+    '0-9-201': 'Zee Delhi NCR Haryana',
+    '0-9-9z5942782': 'Zee Punjabi News',
+    '0-9-9z5942783': 'Zee Chitramandir',
+    '0-9-9z5942784': 'Zee Picchar',
+    '0-9-9z5942785': 'Zee Biskope',
+    '0-9-9z5938346': 'Zee Talkies Live',
+    '0-9-9z5938349': 'Zee Cinemalu Live',
+    '0-9-9z5938347': 'Zee Thirai Live',
+    '0-9-9z5938351': 'Zee Picchar HD',
+    '0-9-9z5938345': 'Zee Cinemalu HD',
+    '0-9-9z5946518': 'Zee Bangla Cinema'
+  };
+
+  if (nameMap[id]) return nameMap[id];
+  return rawTitle;
+}
+
+app.get(['/live/:channelId.m3u8', '/live/:channelId'], async (req, res) => {
+  try {
+    let { channelId } = req.params;
+    if (channelId.endsWith('.m3u8')) {
+      channelId = channelId.slice(0, -5);
+    }
+    const userToken = req.query.token || req.headers['x-user-token'] || null;
+    const streamInfo = await fetchZee5LiveStream(channelId, userToken);
+
+    if (streamInfo.success && streamInfo.liveStreamUrl) {
+      return res.redirect(302, streamInfo.liveStreamUrl);
+    }
+
+    res.status(404).send(`#EXTM3U\n#EXT-X-ERROR: ${streamInfo.errorMessage || 'Channel stream unavailable'}\n`);
+  } catch (err) {
+    res.status(500).send(`#EXTM3U\n#EXT-X-ERROR: ${err.message}\n`);
+  }
+});
+
+app.get(['/playlist.m3u', '/playlist.m3u8', '/api/playlist.m3u', '/api/playlist.m3u8'], async (req, res) => {
+  try {
+    const filterType = req.query.type || 'verified';
+    const groupMode = req.query.group || 'genre';
+    const userToken = req.query.token || '';
+
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
+    const baseUrl = `${protocol}://${host}`;
+
+    const catalogRes = await fetch('https://catalogapi.zee5.com/v1/channel?page=1&page_size=150', {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      }
+    });
+
+    if (!catalogRes.ok) {
+      return res.status(502).send('#EXTM3U\n#EXT-X-ERROR: Unable to fetch live channel catalog\n');
+    }
+
+    const data = await catalogRes.json();
+    const items = data.items || [];
+
+    let m3u = '#EXTM3U x-tvg-url="https://raw.githubusercontent.com/iptv-org/epg/master/sites/zee5.com.epg.xml"\n\n';
+
+    for (const ch of items) {
+      const isVerified = VERIFIED_PLAYABLE_IDS.has(ch.id);
+      if (filterType === 'verified' && !isVerified) {
+        continue;
+      }
+
+      const cleanTitle = formatChannelTitle(ch.title || ch.original_title || ch.id, ch.id);
+      let groupName = 'General';
+      if (groupMode === 'language' && ch.languages && ch.languages[0]) {
+        const langMap = { hi: 'Hindi', en: 'English', mr: 'Marathi', te: 'Telugu', ta: 'Tamil', bn: 'Bengali', gu: 'Gujarati', pa: 'Punjabi', kn: 'Kannada', ml: 'Malayalam', or: 'Odia', bho: 'Bhojpuri' };
+        groupName = langMap[ch.languages[0]] || ch.languages[0].toUpperCase();
+      } else if (ch.genres && ch.genres[0] && ch.genres[0].value) {
+        groupName = ch.genres[0].value;
+      }
+
+      let logo = '';
+      const imgKey = ch.image?.channel_web || ch.image?.channel_list || ch.image?.channel_square || ch.list_image || '';
+      if (imgKey) {
+        if (imgKey.startsWith('http')) {
+          logo = imgKey;
+        } else {
+          const suffix = (imgKey.endsWith('.png') || imgKey.endsWith('.jpg')) ? '' : '.png';
+          logo = `https://akamaividz2.zee5.com/image/upload/w_300,c_scale/resources/${ch.id}/channel_web/${imgKey}${suffix}`;
+        }
+      }
+
+      const tokenParam = userToken ? `?token=${encodeURIComponent(userToken)}` : '';
+      const streamUrl = `${baseUrl}/live/${ch.id}.m3u8${tokenParam}`;
+
+      m3u += `#EXTINF:-1 tvg-id="${ch.id}" tvg-name="${cleanTitle}" tvg-logo="${logo}" group-title="${groupName}",${cleanTitle}\n`;
+      m3u += `${streamUrl}\n\n`;
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl; charset=utf-8');
+    res.setHeader('Content-Disposition', 'inline; filename="zee5_live_channels.m3u"');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(m3u);
+  } catch (err) {
+    res.status(500).send(`#EXTM3U\n#EXT-X-ERROR: ${err.message}\n`);
+  }
 });
 
 app.listen(PORT, () => {
