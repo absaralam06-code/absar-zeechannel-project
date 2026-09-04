@@ -122,7 +122,19 @@ async function fetchZee5LiveStream(channelId, userToken = null) {
     body: JSON.stringify(requestBody)
   });
 
-  const data = await res.json();
+  const text = await res.text();
+  let data = null;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return {
+      success: false,
+      channelId,
+      errorCode: res.status,
+      errorMessage: `Broadcaster gateway error (HTTP ${res.status}). Datacenter IP blocked.`
+    };
+  }
+
   const liveUrl = data.keyOsDetails?.video_token || null;
   const isDrm = data.keyOsDetails?.drm || false;
 

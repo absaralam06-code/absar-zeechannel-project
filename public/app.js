@@ -547,6 +547,97 @@ function resetFilters() {
   applyFilters();
 }
 
+function generateClientDDToken() {
+  return btoa(JSON.stringify({
+    schema_version: '1',
+    os_name: 'N/A',
+    os_version: 'N/A',
+    platform_name: 'Chrome',
+    platform_version: '120',
+    device_name: '',
+    app_name: 'Web',
+    app_version: '2.52.31',
+    player_capabilities: {
+      audio_channel: ['STEREO'],
+      video_codec: ['H264'],
+      container: ['MP4', 'TS'],
+      package: ['DASH', 'HLS'],
+      resolution: ['240p', 'SD', 'HD', 'FHD'],
+      dynamic_range: ['SDR']
+    },
+    security_capabilities: {
+      encryption: ['WIDEVINE_AES_CTR'],
+      widevine_security_level: ['L3'],
+      hdcp_version: ['HDCP_V1', 'HDCP_V2']
+    }
+  }));
+}
+
+function generateClientGuestToken() {
+  const hex = [...Array(32)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+async function requestLiveStream(channelId, userToken = '') {
+  try {
+    const tokenRes = await fetch('/api/token');
+    const tokenData = await tokenRes.json();
+    const platformToken = tokenData.token;
+
+    if (platformToken) {
+      const guestToken = generateClientGuestToken();
+      const ddToken = generateClientDDToken();
+      const userType = userToken ? 'registered' : 'guest';
+      const url = `https://spapi.zee5.com/singlePlayback/getDetails/secure?channel_id=${channelId}&device_id=${guestToken}&platform_name=desktop_web&translation=en&user_language=en,hi&country=IN&state=&app_version=4.24.0&user_type=${userType}&check_parental_control=false`;
+
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      };
+      const body = {
+        'x-access-token': platformToken,
+        'X-Z5-Guest-Token': guestToken,
+        'x-dd-token': ddToken
+      };
+
+      if (userToken) {
+        headers['Authorization'] = `Bearer ${userToken}`;
+        headers['X-Z5-AuthToken'] = userToken;
+        body['user_token'] = userToken;
+      }
+
+      const spRes = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      });
+
+      if (spRes.ok) {
+        const data = await spRes.json();
+        if (data.keyOsDetails?.video_token) {
+          return {
+            success: true,
+            liveStreamUrl: data.keyOsDetails.video_token,
+            isDrm: data.keyOsDetails.drm || false
+          };
+        } else if (data.error_code) {
+          return {
+            success: false,
+            errorCode: data.error_code,
+            errorMessage: data.error_msg
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Direct stream fetch skipped, trying server proxy:', err);
+  }
+
+  const tokenQuery = userToken ? `?token=${encodeURIComponent(userToken)}` : '';
+  const res = await fetch(`/api/stream/${channelId}${tokenQuery}`);
+  return await res.json();
+}
+
 async function selectChannel(channel, autoPlay = true) {
   state.activeChannel = channel;
   const status = getChannelStatus(channel);
@@ -589,9 +680,7 @@ async function selectChannel(channel, autoPlay = true) {
   showVideoStatus(`Connecting to ${channel.title}...`);
   try {
     const savedToken = localStorage.getItem('zee5_user_token') || '';
-    const tokenQuery = savedToken ? `?token=${encodeURIComponent(savedToken)}` : '';
-    const res = await fetch(`/api/stream/${channel.id}${tokenQuery}`);
-    const streamData = await res.json();
+    const streamData = await requestLiveStream(channel.id, savedToken);
 
     if (streamData.success && streamData.liveStreamUrl) {
       if (lockOverlay) lockOverlay.style.display = 'none';
