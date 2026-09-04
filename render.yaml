@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: zee5-live-tv
+    name: absar-zeechannel-project
     env: node
     plan: free
     buildCommand: npm install
