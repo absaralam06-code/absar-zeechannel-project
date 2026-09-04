@@ -1,0 +1,23 @@
+{
+  "name": "zee5-live-tv",
+  "version": "1.0.0",
+  "description": "ZEE5 Live TV Web Application and API Explorer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "zee5",
+    "live-tv",
+    "streaming",
+    "hls",
+    "iptv"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}

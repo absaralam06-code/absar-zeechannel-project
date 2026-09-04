@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZEE5 Live TV - Stream Live TV Channels, News, Movies & Entertainment</title>
+  <meta name="description" content="Watch 113+ ZEE5 Live TV channels online with high-definition streaming, real-time channel guide, genre filtering, and live API exploration.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Hls.js for live HTTP Live Streaming -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="glow-orb glow-1"></div>
+  <div class="glow-orb glow-2"></div>
+
+  <!-- Header Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-left">
+        <a href="#" class="brand-logo" id="brand-logo">
+          <div class="logo-badge">LIVE</div>
+          <span class="logo-text">ZEE<span class="logo-accent">5</span></span>
+          <span class="logo-sub">TV HUB</span>
+        </a>
+        <div class="live-pulse-container" title="Connected to ZEE5 Live Catalog">
+          <span class="pulse-dot"></span>
+          <span class="pulse-label">113+ CHANNELS ONLINE</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="search-box">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="channel-search" placeholder="Search live channels, genres, tags..." autocomplete="off">
+          <button id="clear-search" class="clear-btn" style="display: none;">&times;</button>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button id="btn-demo-streams" class="header-action-btn secondary" title="Switch to Live Public Broadcasts">
+          <i data-lucide="radio"></i>
+          <span>Live Streams</span>
+        </button>
+        <button id="btn-custom-stream" class="header-action-btn secondary" title="Play Custom HLS Stream">
+          <i data-lucide="link"></i>
+          <span>Custom URL</span>
+        </button>
+        <button id="btn-open-api-explorer" class="header-action-btn highlight" title="Open ZEE5 API Explorer">
+          <i data-lucide="terminal"></i>
+          <span>API Explorer</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="app-main">
+    <!-- Hero / Live Player Section -->
+    <section class="player-section" id="player-container">
+      <div class="player-wrapper" id="player-wrapper">
+        <div class="video-container">
+          <video id="live-video" playsinline controls autoplay muted></video>
+          
+          <!-- Stream overlay info -->
+          <div class="stream-overlay" id="stream-overlay">
+            <div class="overlay-badge-row">
+              <span class="stream-badge live" id="player-live-badge">
+                <span class="badge-dot"></span> LIVE
+              </span>
+              <span class="stream-badge drm" id="player-drm-badge">HLS STREAM</span>
+              <span class="stream-badge quality" id="player-quality-badge">AUTO (1080p)</span>
+            </div>
+          </div>
+
+          <!-- Unmute reminder banner -->
+          <div class="unmute-banner" id="unmute-banner">
+            <i data-lucide="volume-x"></i>
+            <span>Playing Muted (Browser Policy). Click anywhere to Unmute Audio</span>
+          </div>
+
+          <!-- Video Loader / Error Message Overlay -->
+          <div class="video-status-overlay" id="video-status" style="display: none;">
+            <div class="spinner" id="video-spinner"></div>
+            <p id="video-status-text">Loading Channel Stream...</p>
+            <button class="btn-xs" id="btn-force-stream-play" style="margin-top: 10px; display: none;">Play Live Feed</button>
+          </div>
+
+          <!-- Subscription Lock Overlay -->
+          <div class="subscription-lock-overlay" id="subscription-lock-overlay" style="display: none;">
+            <div class="lock-icon-wrap">
+              <i data-lucide="lock" style="width: 32px; height: 32px; color: #f59e0b;"></i>
+            </div>
+            <h3 id="lock-overlay-title">Channel Requires Subscription</h3>
+            <p id="lock-overlay-desc">ZEE5 encrypts this premium entertainment channel with Widevine DRM for active paid subscribers.</p>
+            <div class="lock-btn-row">
+              <button class="btn primary" id="btn-watch-free-live">
+                <i data-lucide="play"></i>
+                <span>Switch to Free Live TV (Zee News / Aaj Tak)</span>
+              </button>
+              <button class="btn secondary" id="btn-enter-subscriber-token">
+                <i data-lucide="key"></i>
+                <span>Add Subscriber Token</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player Details & Control Info Bar -->
+        <div class="player-bar">
+          <div class="current-channel-info">
+            <img id="player-channel-logo" src="https://akamaividz2.zee5.com/image/upload/w_200,c_scale/resources/0-9-zeetv/channel_web/170x120105939da1602498aa72936bcb0ef9b77" alt="Channel Logo" class="channel-avatar" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238b5cf6\' stroke-width=\'2\'><rect x=\'2\' y=\'7\' width=\'20\' height=\'15\' rx=\'2\' ry=\'2\'/><polyline points=\'17 2 12 7 7 2\'/></svg>'">
+            <div class="channel-text">
+              <div class="channel-title-row">
+                <h1 id="player-channel-title">Zee TV HD</h1>
+                <span class="tag-pill" id="player-channel-type">Premium</span>
+                <span class="tag-pill accent" id="player-channel-genre">Entertainment</span>
+                <span class="tag-pill language" id="player-channel-lang">Hindi</span>
+              </div>
+              <p id="player-channel-desc" class="channel-description">India's leading Hindi General Entertainment Channel broadcasting serials, reality TV shows, and blockbuster movies.</p>
+            </div>
+          </div>
+
+          <div class="player-actions">
+            <button id="btn-view-details" class="icon-btn-text" title="View Channel Metadata & Licenses">
+              <i data-lucide="info"></i>
+              <span>Channel Details</span>
+            </button>
+            <button id="btn-favorite-active" class="icon-btn" title="Add to Favorites">
+              <i data-lucide="star" id="fav-icon"></i>
+            </button>
+            <button id="btn-theater-mode" class="icon-btn" title="Toggle Theater Mode">
+              <i data-lucide="maximize-2"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter & Category Toolbar -->
+    <section class="filter-section">
+      <!-- Languages bar -->
+      <div class="filter-group">
+        <div class="filter-label">
+          <i data-lucide="languages"></i>
+          <span>Languages:</span>
+        </div>
+        <div class="filter-chips-scroll" id="language-chips">
+          <button class="chip active" data-lang="all">All Languages</button>
+          <button class="chip" data-lang="hi">Hindi (हिन्दी)</button>
+          <button class="chip" data-lang="en">English</button>
+          <button class="chip" data-lang="mr">Marathi (मराठी)</button>
+          <button class="chip" data-lang="te">Telugu (తెలుగు)</button>
+          <button class="chip" data-lang="ta">Tamil (தமிழ்)</button>
+          <button class="chip" data-lang="pa">Punjabi (ਪੰਜਾਬੀ)</button>
+          <button class="chip" data-lang="or">Odia (ଓଡ଼ିଆ)</button>
+          <button class="chip" data-lang="bn">Bengali (বাংলা)</button>
+          <button class="chip" data-lang="gu">Gujarati (ગુજરાતી)</button>
+        </div>
+      </div>
+
+      <!-- Genres bar -->
+      <div class="filter-group">
+        <div class="filter-label">
+          <i data-lucide="film"></i>
+          <span>Genres:</span>
+        </div>
+        <div class="filter-chips-scroll" id="genre-chips">
+          <button class="chip active" data-genre="all">All Genres</button>
+          <button class="chip" data-genre="Entertainment">Entertainment</button>
+          <button class="chip" data-genre="News">News</button>
+          <button class="chip" data-genre="Movie">Movies</button>
+          <button class="chip" data-genre="Music">Music</button>
+          <button class="chip" data-genre="Lifestyle">Lifestyle</button>
+          <button class="chip" data-genre="Comedy">Comedy</button>
+        </div>
+      </div>
+
+      <!-- Secondary Filters & Channel Counters -->
+      <div class="toolbar-stats-row">
+        <div class="channel-type-filters">
+          <button class="type-btn" data-type="all">All (<span id="count-all">0</span>)</button>
+          <button class="type-btn active" data-type="verified" style="color: #34d399; font-weight: 700; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3);">
+            <span class="badge-dot" style="display: inline-block; width: 6px; height: 6px; background: #34d399; border-radius: 50%; margin-right: 5px;"></span>
+            Verified Free Live (<span id="count-verified">0</span>)
+          </button>
+          <button class="type-btn" data-type="premium">Premium Pay-TV (<span id="count-premium">0</span>)</button>
+          <button class="type-btn" data-type="geo">Region-Locked Feeds (<span id="count-geo">0</span>)</button>
+          <button class="type-btn" data-type="favorites">Favorites (<span id="count-favorites">0</span>)</button>
+        </div>
+
+        <div class="channels-status-summary">
+          <span>Showing <strong id="channels-visible-count">0</strong> of <strong id="channels-total-count">0</strong> Channels</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Channels Catalog Grid -->
+    <section class="channels-grid-section">
+      <div class="channels-grid" id="channels-grid">
+        <!-- Channel cards dynamically injected by app.js -->
+        <div class="loading-grid-placeholder">
+          <div class="spinner"></div>
+          <p>Connecting to catalogapi.zee5.com...</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Custom Stream Modal -->
+  <div class="modal-backdrop" id="custom-stream-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i data-lucide="play-circle"></i> Play Custom HLS / m3u8 Stream</h3>
+        <button class="modal-close-btn" id="close-stream-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Enter any valid live HLS (.m3u8) video stream URL to play directly in the Live TV player.</p>
+        <div class="input-group">
+          <label for="custom-stream-url">Stream URL (.m3u8 / HLS)</label>
+          <input type="url" id="custom-stream-url" placeholder="https://example.com/live/master.m3u8" value="https://ddnewsplayback.akamaized.net/hls/live/2034177/ddnews/master.m3u8">
+        </div>
+        <div class="input-group">
+          <label for="custom-stream-title">Stream / Channel Name</label>
+          <input type="text" id="custom-stream-title" placeholder="e.g. DD News Live HD" value="Custom Live Feed">
+        </div>
+
+        <div class="quick-preset-list">
+          <span class="preset-label">Quick Presets:</span>
+          <button class="preset-btn" data-url="https://ddnewsplayback.akamaized.net/hls/live/2034177/ddnews/master.m3u8" data-title="DD News HD Live">DD News HD</button>
+          <button class="preset-btn" data-url="https://static.france24.com/live/F24_EN_LO_HLS/live_tv.m3u8" data-title="France 24 Live">France 24</button>
+          <button class="preset-btn" data-url="https://live-hls-web-aje.getaj.net/AJE/01.m3u8" data-title="Al Jazeera English">Al Jazeera</button>
+          <button class="preset-btn" data-url="https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8" data-title="Red Bull TV">Red Bull TV</button>
+          <button class="preset-btn" data-url="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" data-title="Akamai Multi-Bitrate HLS">Mux Multi-Bitrate</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn secondary" id="btn-cancel-custom-stream">Cancel</button>
+        <button class="btn primary" id="btn-load-custom-stream">Load & Play Stream</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel Details & Licensing Modal -->
+  <div class="modal-backdrop" id="channel-details-modal" style="display: none;">
+    <div class="modal-card detail-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <img id="modal-channel-logo" src="" alt="Logo" class="modal-logo">
+          <div>
+            <h3 id="modal-channel-title">Channel Details</h3>
+            <span class="tag-pill" id="modal-channel-id">0-9-zeetv</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="close-details-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="channel-detail-grid">
+          <div class="detail-item">
+            <span class="label">Original Title:</span>
+            <strong id="modal-detail-original">-</strong>
+          </div>
+          <div class="detail-item">
+            <span class="label">Business Type:</span>
+            <strong id="modal-detail-business">-</strong>
+          </div>
+          <div class="detail-item">
+            <span class="label">Primary Language:</span>
+            <strong id="modal-detail-lang">-</strong>
+          </div>
+          <div class="detail-item">
+            <span class="label">Audio Languages:</span>
+            <strong id="modal-detail-audio">-</strong>
+          </div>
+          <div class="detail-item">
+            <span class="label">Owner / Broadcaster:</span>
+            <strong id="modal-detail-owner">-</strong>
+          </div>
+          <div class="detail-item">
+            <span class="label">Licensing Region:</span>
+            <strong id="modal-detail-licensing">India Available</strong>
+          </div>
+          <div class="detail-item full-width">
+            <span class="label">Tags & Features:</span>
+            <div id="modal-detail-tags" class="tag-row"></div>
+          </div>
+          <div class="detail-item full-width">
+            <span class="label">Overview:</span>
+            <p id="modal-detail-desc" class="modal-desc-text"></p>
+          </div>
+        </div>
+
+        <div class="modal-api-debug-box">
+          <div class="api-debug-header">
+            <span><i data-lucide="code"></i> Direct API Raw Responses</span>
+            <button class="btn-xs" id="modal-copy-json">Copy JSON</button>
+          </div>
+          <pre id="modal-raw-json" class="code-block">Loading live details...</pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn secondary" id="btn-close-details">Close</button>
+        <button class="btn highlight" id="btn-test-spapi-active">
+          <i data-lucide="shield-check"></i>
+          <span>Test Playback Endpoint</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive ZEE5 API Explorer Drawer -->
+  <aside class="api-explorer-drawer" id="api-explorer-drawer">
+    <div class="explorer-header">
+      <div class="explorer-title">
+        <i data-lucide="terminal"></i>
+        <span>ZEE5 API Educational Workbench</span>
+      </div>
+      <button class="drawer-close-btn" id="close-api-explorer">&times;</button>
+    </div>
+
+    <!-- API Selector Navigation -->
+    <div class="explorer-tabs">
+      <button class="exp-tab active" data-endpoint="catalog">1. Catalog API</button>
+      <button class="exp-tab" data-endpoint="token">2. Platform Token</button>
+      <button class="exp-tab" data-endpoint="channel_details">3. Content Details</button>
+      <button class="exp-tab" data-endpoint="genres">4. Genres & Langs</button>
+      <button class="exp-tab" data-endpoint="country">5. Geo / Country</button>
+      <button class="exp-tab" data-endpoint="spapi">6. Secure Playback</button>
+      <button class="exp-tab" data-endpoint="graphql">7. Artemis GraphQL</button>
+    </div>
+
+    <!-- API Control Panel -->
+    <div class="explorer-body">
+      <div class="api-request-bar">
+        <span class="http-badge" id="api-method">GET</span>
+        <input type="text" id="api-target-url" class="api-url-input" readonly>
+        <button id="btn-execute-api" class="btn primary">
+          <i data-lucide="play"></i>
+          <span>Execute</span>
+        </button>
+      </div>
+
+      <!-- Optional Params / Payload configuration -->
+      <div class="api-config-section" id="api-config-section">
+        <!-- Injected per tab -->
+      </div>
+
+      <!-- Execution Status / Latency Bar -->
+      <div class="api-meta-bar">
+        <div class="meta-item">
+          <span>Status:</span>
+          <strong id="api-status-code" class="status-pill status-ready">Ready</strong>
+        </div>
+        <div class="meta-item">
+          <span>Latency:</span>
+          <strong id="api-latency">- ms</strong>
+        </div>
+        <div class="meta-item">
+          <span>Token Attached:</span>
+          <strong id="api-token-attached" class="badge-pill">X-Access-Token</strong>
+        </div>
+        <button id="btn-copy-response" class="btn-xs">Copy Result</button>
+      </div>
+
+      <!-- Response Output Window -->
+      <div class="api-response-container">
+        <pre id="api-response-output" class="code-block response-box">Click "Execute" to query this ZEE5 endpoint live...</pre>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <span class="footer-brand">ZEE5 Live TV Project</span>
+        <span class="footer-sep">|</span>
+        <span class="footer-disclaimer">For Educational & Research Purposes Only. Powered by ZEE5 Public Content APIs.</span>
+      </div>
+      <div class="footer-right">
+        <a href="https://catalogapi.zee5.com/v1/channel" target="_blank" rel="noopener">Catalog API</a>
+        <a href="https://launchapi.zee5.com/token/platform_tokens.php?platform_name=web_app" target="_blank" rel="noopener">Token API</a>
+        <a href="https://www.zee5.com/live-tv" target="_blank" rel="noopener">ZEE5 Live TV</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
