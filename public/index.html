@@ -3,23 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZEE5 Live TV - Stream Live TV Channels, News, Movies & Entertainment</title>
-  <meta name="description" content="Watch 113+ ZEE5 Live TV channels online with high-definition streaming, real-time channel guide, genre filtering, and live API exploration.">
+  <title>ZEE5 Live TV - Stream Channels Online</title>
+  <meta name="description" content="Watch live television channels online with adaptive HLS playback, channel guide, and search.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Hls.js for live HTTP Live Streaming -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Ambient background glow elements -->
   <div class="glow-orb glow-1"></div>
   <div class="glow-orb glow-2"></div>
 
-  <!-- Header Navigation -->
   <header class="app-header">
     <div class="header-container">
       <div class="header-left">
@@ -28,7 +24,7 @@
           <span class="logo-text">ZEE<span class="logo-accent">5</span></span>
           <span class="logo-sub">TV HUB</span>
         </a>
-        <div class="live-pulse-container" title="Connected to ZEE5 Live Catalog">
+        <div class="live-pulse-container">
           <span class="pulse-dot"></span>
           <span class="pulse-label">113+ CHANNELS ONLINE</span>
         </div>
@@ -43,15 +39,15 @@
       </div>
 
       <div class="header-right">
-        <button id="btn-demo-streams" class="header-action-btn secondary" title="Switch to Live Public Broadcasts">
+        <button id="btn-demo-streams" class="header-action-btn secondary" title="Switch Broadcast">
           <i data-lucide="radio"></i>
           <span>Live Streams</span>
         </button>
-        <button id="btn-custom-stream" class="header-action-btn secondary" title="Play Custom HLS Stream">
+        <button id="btn-custom-stream" class="header-action-btn secondary" title="Custom HLS">
           <i data-lucide="link"></i>
           <span>Custom URL</span>
         </button>
-        <button id="btn-open-api-explorer" class="header-action-btn highlight" title="Open ZEE5 API Explorer">
+        <button id="btn-open-api-explorer" class="header-action-btn highlight" title="API Explorer">
           <i data-lucide="terminal"></i>
           <span>API Explorer</span>
         </button>
@@ -59,15 +55,12 @@
     </div>
   </header>
 
-  <!-- Main Content Layout -->
   <main class="app-main">
-    <!-- Hero / Live Player Section -->
     <section class="player-section" id="player-container">
       <div class="player-wrapper" id="player-wrapper">
         <div class="video-container">
           <video id="live-video" playsinline controls autoplay muted></video>
           
-          <!-- Stream overlay info -->
           <div class="stream-overlay" id="stream-overlay">
             <div class="overlay-badge-row">
               <span class="stream-badge live" id="player-live-badge">
@@ -78,30 +71,27 @@
             </div>
           </div>
 
-          <!-- Unmute reminder banner -->
           <div class="unmute-banner" id="unmute-banner">
             <i data-lucide="volume-x"></i>
-            <span>Playing Muted (Browser Policy). Click anywhere to Unmute Audio</span>
+            <span>Playing Muted (Browser Policy). Click anywhere to unmute.</span>
           </div>
 
-          <!-- Video Loader / Error Message Overlay -->
           <div class="video-status-overlay" id="video-status" style="display: none;">
             <div class="spinner" id="video-spinner"></div>
-            <p id="video-status-text">Loading Channel Stream...</p>
+            <p id="video-status-text">Loading stream...</p>
             <button class="btn-xs" id="btn-force-stream-play" style="margin-top: 10px; display: none;">Play Live Feed</button>
           </div>
 
-          <!-- Subscription Lock Overlay -->
           <div class="subscription-lock-overlay" id="subscription-lock-overlay" style="display: none;">
             <div class="lock-icon-wrap">
               <i data-lucide="lock" style="width: 32px; height: 32px; color: #f59e0b;"></i>
             </div>
             <h3 id="lock-overlay-title">Channel Requires Subscription</h3>
-            <p id="lock-overlay-desc">ZEE5 encrypts this premium entertainment channel with Widevine DRM for active paid subscribers.</p>
+            <p id="lock-overlay-desc">This channel is encrypted with Widevine DRM for active subscribers.</p>
             <div class="lock-btn-row">
               <button class="btn primary" id="btn-watch-free-live">
                 <i data-lucide="play"></i>
-                <span>Switch to Free Live TV (Zee News / Aaj Tak)</span>
+                <span>Switch to Free Live TV</span>
               </button>
               <button class="btn secondary" id="btn-enter-subscriber-token">
                 <i data-lucide="key"></i>
@@ -111,10 +101,9 @@
           </div>
         </div>
 
-        <!-- Player Details & Control Info Bar -->
         <div class="player-bar">
           <div class="current-channel-info">
-            <img id="player-channel-logo" src="https://akamaividz2.zee5.com/image/upload/w_200,c_scale/resources/0-9-zeetv/channel_web/170x120105939da1602498aa72936bcb0ef9b77" alt="Channel Logo" class="channel-avatar" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238b5cf6\' stroke-width=\'2\'><rect x=\'2\' y=\'7\' width=\'20\' height=\'15\' rx=\'2\' ry=\'2\'/><polyline points=\'17 2 12 7 7 2\'/></svg>'">
+            <img id="player-channel-logo" src="https://akamaividz2.zee5.com/image/upload/w_200,c_scale/resources/0-9-zeetv/channel_web/170x120105939da1602498aa72936bcb0ef9b77" alt="Logo" class="channel-avatar" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238b5cf6\' stroke-width=\'2\'><rect x=\'2\' y=\'7\' width=\'20\' height=\'15\' rx=\'2\' ry=\'2\'/><polyline points=\'17 2 12 7 7 2\'/></svg>'">
             <div class="channel-text">
               <div class="channel-title-row">
                 <h1 id="player-channel-title">Zee TV HD</h1>
@@ -122,16 +111,16 @@
                 <span class="tag-pill accent" id="player-channel-genre">Entertainment</span>
                 <span class="tag-pill language" id="player-channel-lang">Hindi</span>
               </div>
-              <p id="player-channel-desc" class="channel-description">India's leading Hindi General Entertainment Channel broadcasting serials, reality TV shows, and blockbuster movies.</p>
+              <p id="player-channel-desc" class="channel-description">India's leading Hindi General Entertainment Channel broadcasting serials and movies.</p>
             </div>
           </div>
 
           <div class="player-actions">
-            <button id="btn-view-details" class="icon-btn-text" title="View Channel Metadata & Licenses">
+            <button id="btn-view-details" class="icon-btn-text" title="Channel Details">
               <i data-lucide="info"></i>
               <span>Channel Details</span>
             </button>
-            <button id="btn-favorite-active" class="icon-btn" title="Add to Favorites">
+            <button id="btn-favorite-active" class="icon-btn" title="Toggle Favorite">
               <i data-lucide="star" id="fav-icon"></i>
             </button>
             <button id="btn-theater-mode" class="icon-btn" title="Toggle Theater Mode">
@@ -142,9 +131,7 @@
       </div>
     </section>
 
-    <!-- Filter & Category Toolbar -->
     <section class="filter-section">
-      <!-- Languages bar -->
       <div class="filter-group">
         <div class="filter-label">
           <i data-lucide="languages"></i>
@@ -164,7 +151,6 @@
         </div>
       </div>
 
-      <!-- Genres bar -->
       <div class="filter-group">
         <div class="filter-label">
           <i data-lucide="film"></i>
@@ -181,7 +167,6 @@
         </div>
       </div>
 
-      <!-- Secondary Filters & Channel Counters -->
       <div class="toolbar-stats-row">
         <div class="channel-type-filters">
           <button class="type-btn" data-type="all">All (<span id="count-all">0</span>)</button>
@@ -200,38 +185,35 @@
       </div>
     </section>
 
-    <!-- Channels Catalog Grid -->
     <section class="channels-grid-section">
       <div class="channels-grid" id="channels-grid">
-        <!-- Channel cards dynamically injected by app.js -->
         <div class="loading-grid-placeholder">
           <div class="spinner"></div>
-          <p>Connecting to catalogapi.zee5.com...</p>
+          <p>Connecting to catalog...</p>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- Custom Stream Modal -->
   <div class="modal-backdrop" id="custom-stream-modal" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
-        <h3><i data-lucide="play-circle"></i> Play Custom HLS / m3u8 Stream</h3>
+        <h3><i data-lucide="play-circle"></i> Play Custom Stream</h3>
         <button class="modal-close-btn" id="close-stream-modal">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc">Enter any valid live HLS (.m3u8) video stream URL to play directly in the Live TV player.</p>
+        <p class="modal-desc">Enter any valid live HLS (.m3u8) stream URL to play directly in the video player.</p>
         <div class="input-group">
-          <label for="custom-stream-url">Stream URL (.m3u8 / HLS)</label>
+          <label for="custom-stream-url">Stream URL (.m3u8)</label>
           <input type="url" id="custom-stream-url" placeholder="https://example.com/live/master.m3u8" value="https://ddnewsplayback.akamaized.net/hls/live/2034177/ddnews/master.m3u8">
         </div>
         <div class="input-group">
-          <label for="custom-stream-title">Stream / Channel Name</label>
+          <label for="custom-stream-title">Channel Name</label>
           <input type="text" id="custom-stream-title" placeholder="e.g. DD News Live HD" value="Custom Live Feed">
         </div>
 
         <div class="quick-preset-list">
-          <span class="preset-label">Quick Presets:</span>
+          <span class="preset-label">Presets:</span>
           <button class="preset-btn" data-url="https://ddnewsplayback.akamaized.net/hls/live/2034177/ddnews/master.m3u8" data-title="DD News HD Live">DD News HD</button>
           <button class="preset-btn" data-url="https://static.france24.com/live/F24_EN_LO_HLS/live_tv.m3u8" data-title="France 24 Live">France 24</button>
           <button class="preset-btn" data-url="https://live-hls-web-aje.getaj.net/AJE/01.m3u8" data-title="Al Jazeera English">Al Jazeera</button>
@@ -241,12 +223,11 @@
       </div>
       <div class="modal-footer">
         <button class="btn secondary" id="btn-cancel-custom-stream">Cancel</button>
-        <button class="btn primary" id="btn-load-custom-stream">Load & Play Stream</button>
+        <button class="btn primary" id="btn-load-custom-stream">Load Stream</button>
       </div>
     </div>
   </div>
 
-  <!-- Channel Details & Licensing Modal -->
   <div class="modal-backdrop" id="channel-details-modal" style="display: none;">
     <div class="modal-card detail-card">
       <div class="modal-header">
@@ -300,7 +281,7 @@
             <span><i data-lucide="code"></i> Direct API Raw Responses</span>
             <button class="btn-xs" id="modal-copy-json">Copy JSON</button>
           </div>
-          <pre id="modal-raw-json" class="code-block">Loading live details...</pre>
+          <pre id="modal-raw-json" class="code-block">Loading details...</pre>
         </div>
       </div>
       <div class="modal-footer">
@@ -313,17 +294,15 @@
     </div>
   </div>
 
-  <!-- Interactive ZEE5 API Explorer Drawer -->
   <aside class="api-explorer-drawer" id="api-explorer-drawer">
     <div class="explorer-header">
       <div class="explorer-title">
         <i data-lucide="terminal"></i>
-        <span>ZEE5 API Educational Workbench</span>
+        <span>API Workbench</span>
       </div>
       <button class="drawer-close-btn" id="close-api-explorer">&times;</button>
     </div>
 
-    <!-- API Selector Navigation -->
     <div class="explorer-tabs">
       <button class="exp-tab active" data-endpoint="catalog">1. Catalog API</button>
       <button class="exp-tab" data-endpoint="token">2. Platform Token</button>
@@ -334,7 +313,6 @@
       <button class="exp-tab" data-endpoint="graphql">7. Artemis GraphQL</button>
     </div>
 
-    <!-- API Control Panel -->
     <div class="explorer-body">
       <div class="api-request-bar">
         <span class="http-badge" id="api-method">GET</span>
@@ -345,12 +323,8 @@
         </button>
       </div>
 
-      <!-- Optional Params / Payload configuration -->
-      <div class="api-config-section" id="api-config-section">
-        <!-- Injected per tab -->
-      </div>
+      <div class="api-config-section" id="api-config-section"></div>
 
-      <!-- Execution Status / Latency Bar -->
       <div class="api-meta-bar">
         <div class="meta-item">
           <span>Status:</span>
@@ -367,25 +341,22 @@
         <button id="btn-copy-response" class="btn-xs">Copy Result</button>
       </div>
 
-      <!-- Response Output Window -->
       <div class="api-response-container">
-        <pre id="api-response-output" class="code-block response-box">Click "Execute" to query this ZEE5 endpoint live...</pre>
+        <pre id="api-response-output" class="code-block response-box">Click "Execute" to test endpoint...</pre>
       </div>
     </div>
   </aside>
 
-  <!-- Footer -->
   <footer class="app-footer">
     <div class="footer-container">
       <div class="footer-left">
-        <span class="footer-brand">ZEE5 Live TV Project</span>
+        <span class="footer-brand">Live TV Hub</span>
         <span class="footer-sep">|</span>
-        <span class="footer-disclaimer">For Educational & Research Purposes Only. Powered by ZEE5 Public Content APIs.</span>
+        <span class="footer-disclaimer">Personal & Educational Research Tool</span>
       </div>
       <div class="footer-right">
         <a href="https://catalogapi.zee5.com/v1/channel" target="_blank" rel="noopener">Catalog API</a>
         <a href="https://launchapi.zee5.com/token/platform_tokens.php?platform_name=web_app" target="_blank" rel="noopener">Token API</a>
-        <a href="https://www.zee5.com/live-tv" target="_blank" rel="noopener">ZEE5 Live TV</a>
       </div>
     </div>
   </footer>

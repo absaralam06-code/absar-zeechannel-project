@@ -9,13 +9,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// In-memory token cache
 let cachedToken = null;
 let tokenExpiresAt = 0;
 
-/**
- * Fetch fresh platform token from launchapi.zee5.com
- */
 async function getPlatformToken(forceRefresh = false) {
   const now = Date.now();
   if (!forceRefresh && cachedToken && now < tokenExpiresAt) {
@@ -31,28 +27,23 @@ async function getPlatformToken(forceRefresh = false) {
     });
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch token: HTTP ${res.status}`);
+      throw new Error(`Token fetch failed: HTTP ${res.status}`);
     }
 
     const data = await res.json();
-    if (data && data.token) {
+    if (data?.token) {
       cachedToken = data.token;
-      // Zee5 tokens typically last 24 hours; refresh after 12 hours
       tokenExpiresAt = now + 12 * 60 * 60 * 1000;
-      console.log('✓ Platform token refreshed successfully');
       return cachedToken;
     }
     throw new Error('Token not found in response');
   } catch (err) {
-    console.error('Error fetching platform token:', err.message);
-    if (cachedToken) return cachedToken; // Fallback to existing
+    console.error('Platform token error:', err.message);
+    if (cachedToken) return cachedToken;
     throw err;
   }
 }
 
-/**
- * Decode JWT without verifying signature for debugging view
- */
 function decodeJwt(token) {
   try {
     const parts = token.split('.');
@@ -61,267 +52,11 @@ function decodeJwt(token) {
       header: JSON.parse(Buffer.from(parts[0], 'base64').toString('utf8')),
       payload: JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'))
     };
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
-// ----------------------------------------------------
-// API ROUTES
-// ----------------------------------------------------
-
-/**
- * GET /api/token
- * Returns active platform token and claims
- */
-app.get('/api/token', async (req, res) => {
-  try {
-    const force = req.query.refresh === 'true';
-    const token = await getPlatformToken(force);
-    const decoded = decodeJwt(token);
-    res.json({
-      success: true,
-      token,
-      decoded,
-      expiresAt: new Date(tokenExpiresAt).toISOString(),
-      cached: !force
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * GET /api/channels
- * Fetch catalog of live channels
- */
-app.get('/api/channels', async (req, res) => {
-  try {
-    const page = req.query.page || 1;
-    const pageSize = req.query.page_size || 100;
-    const catalogUrl = `https://catalogapi.zee5.com/v1/channel?page=${page}&page_size=${pageSize}`;
-
-    const catalogRes = await fetch(catalogUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      }
-    });
-
-    if (!catalogRes.ok) {
-      return res.status(catalogRes.status).json({
-        success: false,
-        error: `Catalog API returned HTTP ${catalogRes.status}`
-      });
-    }
-
-    const data = await catalogRes.json();
-    res.json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * GET /api/channel/:id
- * Fetch detailed channel info + licensing
- */
-app.get('/api/channel/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const token = await getPlatformToken();
-
-    const headers = {
-      'Accept': 'application/json',
-      'X-Access-Token': token,
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-    };
-
-    // Parallel fetch of details and license
-    const [detailsRes, licenseRes] = await Promise.allSettled([
-      fetch(`https://gwapi.zee5.com/contentlight/details/${id}`, { headers }),
-      fetch(`https://gwapi.zee5.com/content/details_with_licences/${id}`, { headers })
-    ]);
-
-    let channelDetails = null;
-    let licenses = null;
-
-    if (detailsRes.status === 'fulfilled' && detailsRes.value.ok) {
-      const d = await detailsRes.value.json();
-      channelDetails = d.channelDetails || d;
-    }
-
-    if (licenseRes.status === 'fulfilled' && licenseRes.value.ok) {
-      licenses = await licenseRes.value.json();
-    }
-
-    res.json({
-      success: true,
-      id,
-      channelDetails,
-      licenses
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * GET /api/genres-languages
- * Fetch official genres and languages lists
- */
-app.get('/api/genres-languages', async (req, res) => {
-  try {
-    const token = await getPlatformToken();
-    const headers = {
-      'Accept': 'application/json',
-      'X-Access-Token': token,
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-    };
-
-    const [genresRes, languagesRes] = await Promise.allSettled([
-      fetch('https://contentapi.zee5.com/content/seo/genres-languages?type=genre&country=IN&asset_subtype=livetv', { headers }),
-      fetch('https://contentapi.zee5.com/content/seo/genres-languages?type=language&country=IN&asset_subtype=livetv', { headers })
-    ]);
-
-    const genres = genresRes.status === 'fulfilled' && genresRes.value.ok ? await genresRes.value.json() : { genres: [] };
-    const languages = languagesRes.status === 'fulfilled' && languagesRes.value.ok ? await languagesRes.value.json() : { languages: [] };
-
-    res.json({
-      success: true,
-      genres: genres.genres || [],
-      languages: languages.languages || []
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * GET /api/appconfig
- * Fetch global app config
- */
-app.get('/api/appconfig', async (req, res) => {
-  try {
-    const country = req.query.country || 'IN';
-    const configRes = await fetch(`https://launchapi.zee5.com/appconfig?country=${country}&platform_name=web_app`, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      }
-    });
-    const data = await configRes.json();
-    res.json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * GET /api/country
- * Geo location info
- */
-app.get('/api/country', async (req, res) => {
-  try {
-    const r = await fetch('https://xtra.zee5.com/country');
-    const data = await r.json();
-    res.json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * GET /api/countrylist
- * Full country list
- */
-app.get('/api/countrylist', async (req, res) => {
-  try {
-    const r = await fetch('https://launchapi.zee5.com/countrylist');
-    const data = await r.json();
-    res.json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * POST /api/spapi/secure
- * Secure Playback endpoint probe
- */
-app.post('/api/spapi/secure', async (req, res) => {
-  try {
-    const token = await getPlatformToken();
-    const targetUrl = req.body.url || 'https://spapi.zee5.com/singlePlayback/v2/getDetails/secure';
-    const customHeaders = req.body.headers || {};
-    const payload = req.body.payload || { content_id: req.body.content_id || '0-9-zeetv' };
-
-    const startTime = Date.now();
-    const spRes = await fetch(targetUrl, {
-      method: req.body.method || 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Access-Token': token,
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Origin': 'https://www.zee5.com',
-        'Referer': 'https://www.zee5.com/',
-        ...customHeaders
-      },
-      body: req.body.method === 'GET' ? undefined : JSON.stringify(payload)
-    });
-
-    const duration = Date.now() - startTime;
-    const text = await spRes.text();
-    let parsed = null;
-    try { parsed = JSON.parse(text); } catch(e) { parsed = text; }
-
-    res.json({
-      success: spRes.ok,
-      status: spRes.status,
-      durationMs: duration,
-      targetUrl,
-      response: parsed
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * POST /api/graphql
- * Artemis GraphQL APQ proxy
- */
-app.post('/api/graphql', async (req, res) => {
-  try {
-    const token = await getPlatformToken();
-    const startTime = Date.now();
-    const gRes = await fetch('https://artemis.zee5.com/artemis/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Access-Token': token,
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      },
-      body: JSON.stringify(req.body)
-    });
-
-    const duration = Date.now() - startTime;
-    const data = await gRes.json();
-    res.json({
-      success: gRes.ok,
-      status: gRes.status,
-      durationMs: duration,
-      data
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * GET /api/demo-streams
- * Live streaming test feeds (HLS) for instant live television viewing
- */
 function generateDDToken() {
   return Buffer.from(JSON.stringify({
     schema_version: '1',
@@ -350,19 +85,15 @@ function generateDDToken() {
 
 function generateGuestToken() {
   const hex = [...Array(32)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-/**
- * Fetch real live stream URL from ZEE5 SPAPI (singlePlayback secure)
- * Supports optional userToken for ZEE5 Premium Subscribers
- */
 async function fetchZee5LiveStream(channelId, userToken = null) {
   const platformToken = await getPlatformToken();
   const guestToken = generateGuestToken();
   const ddToken = generateDDToken();
-
   const userType = userToken ? 'registered' : 'guest';
+
   const url = `https://spapi.zee5.com/singlePlayback/getDetails/secure?channel_id=${channelId}&device_id=${guestToken}&platform_name=desktop_web&translation=en&user_language=en,hi&country=IN&state=&app_version=4.24.0&user_type=${userType}&check_parental_control=false`;
 
   const requestBody = {
@@ -400,7 +131,7 @@ async function fetchZee5LiveStream(channelId, userToken = null) {
     channelId,
     title: data.assetDetails?.title || '',
     liveStreamUrl: liveUrl,
-    isDrm: isDrm,
+    isDrm,
     businessType: data.assetDetails?.business_type || '',
     errorCode: data.error_code || null,
     errorMessage: data.error_msg || null,
@@ -408,10 +139,217 @@ async function fetchZee5LiveStream(channelId, userToken = null) {
   };
 }
 
-/**
- * GET /api/stream/:channelId
- * Real-time live broadcast extraction
- */
+app.get('/api/token', async (req, res) => {
+  try {
+    const force = req.query.refresh === 'true';
+    const token = await getPlatformToken(force);
+    const decoded = decodeJwt(token);
+    res.json({
+      success: true,
+      token,
+      decoded,
+      expiresAt: new Date(tokenExpiresAt).toISOString(),
+      cached: !force
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/channels', async (req, res) => {
+  try {
+    const page = req.query.page || 1;
+    const pageSize = req.query.page_size || 100;
+    const catalogUrl = `https://catalogapi.zee5.com/v1/channel?page=${page}&page_size=${pageSize}`;
+
+    const catalogRes = await fetch(catalogUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      }
+    });
+
+    if (!catalogRes.ok) {
+      return res.status(catalogRes.status).json({
+        success: false,
+        error: `Catalog API returned HTTP ${catalogRes.status}`
+      });
+    }
+
+    const data = await catalogRes.json();
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/channel/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const token = await getPlatformToken();
+
+    const headers = {
+      'Accept': 'application/json',
+      'X-Access-Token': token,
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+    };
+
+    const [detailsRes, licenseRes] = await Promise.allSettled([
+      fetch(`https://gwapi.zee5.com/contentlight/details/${id}`, { headers }),
+      fetch(`https://gwapi.zee5.com/content/details_with_licences/${id}`, { headers })
+    ]);
+
+    let channelDetails = null;
+    let licenses = null;
+
+    if (detailsRes.status === 'fulfilled' && detailsRes.value.ok) {
+      const d = await detailsRes.value.json();
+      channelDetails = d.channelDetails || d;
+    }
+
+    if (licenseRes.status === 'fulfilled' && licenseRes.value.ok) {
+      licenses = await licenseRes.value.json();
+    }
+
+    res.json({
+      success: true,
+      id,
+      channelDetails,
+      licenses
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/genres-languages', async (req, res) => {
+  try {
+    const token = await getPlatformToken();
+    const headers = {
+      'Accept': 'application/json',
+      'X-Access-Token': token,
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+    };
+
+    const [genresRes, languagesRes] = await Promise.allSettled([
+      fetch('https://contentapi.zee5.com/content/seo/genres-languages?type=genre&country=IN&asset_subtype=livetv', { headers }),
+      fetch('https://contentapi.zee5.com/content/seo/genres-languages?type=language&country=IN&asset_subtype=livetv', { headers })
+    ]);
+
+    const genres = genresRes.status === 'fulfilled' && genresRes.value.ok ? await genresRes.value.json() : { genres: [] };
+    const languages = languagesRes.status === 'fulfilled' && languagesRes.value.ok ? await languagesRes.value.json() : { languages: [] };
+
+    res.json({
+      success: true,
+      genres: genres.genres || [],
+      languages: languages.languages || []
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/appconfig', async (req, res) => {
+  try {
+    const country = req.query.country || 'IN';
+    const configRes = await fetch(`https://launchapi.zee5.com/appconfig?country=${country}&platform_name=web_app`, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      }
+    });
+    const data = await configRes.json();
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/country', async (req, res) => {
+  try {
+    const r = await fetch('https://xtra.zee5.com/country');
+    const data = await r.json();
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/countrylist', async (req, res) => {
+  try {
+    const r = await fetch('https://launchapi.zee5.com/countrylist');
+    const data = await r.json();
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/spapi/secure', async (req, res) => {
+  try {
+    const token = await getPlatformToken();
+    const targetUrl = req.body.url || 'https://spapi.zee5.com/singlePlayback/v2/getDetails/secure';
+    const customHeaders = req.body.headers || {};
+    const payload = req.body.payload || { content_id: req.body.content_id || '0-9-zeetv' };
+
+    const startTime = Date.now();
+    const spRes = await fetch(targetUrl, {
+      method: req.body.method || 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Access-Token': token,
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Origin': 'https://www.zee5.com',
+        'Referer': 'https://www.zee5.com/',
+        ...customHeaders
+      },
+      body: req.body.method === 'GET' ? undefined : JSON.stringify(payload)
+    });
+
+    const duration = Date.now() - startTime;
+    const text = await spRes.text();
+    let parsed = null;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+
+    res.json({
+      success: spRes.ok,
+      status: spRes.status,
+      durationMs: duration,
+      targetUrl,
+      response: parsed
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/graphql', async (req, res) => {
+  try {
+    const token = await getPlatformToken();
+    const startTime = Date.now();
+    const gRes = await fetch('https://artemis.zee5.com/artemis/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Access-Token': token,
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+      },
+      body: JSON.stringify(req.body)
+    });
+
+    const duration = Date.now() - startTime;
+    const data = await gRes.json();
+    res.json({
+      success: gRes.ok,
+      status: gRes.status,
+      durationMs: duration,
+      data
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/stream/:channelId', async (req, res) => {
   try {
     const { channelId } = req.params;
@@ -423,10 +361,6 @@ app.get('/api/stream/:channelId', async (req, res) => {
   }
 });
 
-/**
- * GET /api/live-channels
- * Featured 100% verified real live broadcast channels
- */
 app.get('/api/live-channels', (req, res) => {
   res.json({
     success: true,
@@ -446,8 +380,5 @@ app.get('/api/live-channels', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`=========================================`);
-  console.log(`🚀 ZEE5 Live TV Server running at:`);
-  console.log(`   http://localhost:${PORT}`);
-  console.log(`=========================================`);
+  console.log(`Server listening on http://localhost:${PORT}`);
 });

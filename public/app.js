@@ -1,62 +1,51 @@
-/**
- * ZEE5 Live TV Hub - Application Controller
- * Handles channel catalog, HLS streaming, multi-filtering, and API Explorer
- */
-
-// 47 Verified 100% Real Live TV Channels directly playable on ZEE5 in India without subscription
 const VERIFIED_PLAYABLE_IDS = new Set([
-  // FAST 24/7 Movie & Entertainment Channels
-  '0-9-9z51072894', // zeesouthflix
-  '0-9-9z51072893', // zeehorrornights
-  '0-9-9z51072892', // zeedilse
-  '0-9-9z51072556', // zeecomedynation
-  '0-9-9z51072553', // Zeecineclassic
-  '0-9-zeeaction',   // Zee Action
-  '0-9-zeeanmolcinema', // Anmol Cinema
-  '0-9-bigganga',    // Anmol Cinema 2
-  '0-9-216',         // Zee Biskope
-  '0-9-bigmagic_1786965389', // Big Magic
-  '0-9-zeeanmol',    // Anmol TV
-
-  // National & Regional Free Live News Channels
-  '0-9-zeenews',     // Zee News
-  '0-9-aajtak',      // Aaj Tak
-  '0-9-indiatoday',  // India Today
-  '0-9-wion',        // WION
-  '0-9-zeebusiness',  // Zee Business
-  '0-9-zeehindustan', // Zee Bharat
-  '0-9-zeerajasthannews', // Zee Rajasthan News
-  '0-9-zeepunjabharyanahima', // Zee Punjab Haryana Himachal Pradesh
-  '0-9-channel_265145625', // Zee News Uttar Pradesh Uttrakhand
-  '0-9-zeemadhyapradeshchat', // Zee Madhya Pradesh Chhattisgarh
-  '0-9-zeebiharjharkhand', // Zee Bihar Jharkhand
-  '0-9-zeekalinganews', // Zee Delhi NCR Haryana
-  '0-9-9z583538',    // Zee News Telugu
-  '0-9-9z583537',    // Zee News Kannada
-  '0-9-zee24taas',   // Zee 24 Taas
-  '0-9-zee24kalak',  // Zee 24 Kalak
-  '0-9-24ghantatv',  // Zee 24 Ghanta
-  '0-9-251',         // TV9 Bharatvarsh
-  '0-9-257',         // TV9 Marathi
-  '0-9-258',         // TV9 Telugu
-  '0-9-259',         // TV9 Kannada
-  '0-9-260',         // TV9 Gujarati
-  '0-9-378',         // TV9 Bangla
-  '0-9-200',         // Asianet News
-  '0-9-201',         // Suvarna News
-  '0-9-261',         // News 9
-  '0-9-9z5942782',   // NDTV
-  '0-9-9z5942783',   // NDTV India
-  '0-9-9z5942784',   // NDTV Profit
-  '0-9-9z5942785',   // NDTV Marathi
-
-  // Devotional & Live Darshan 24/7
-  '0-9-9z5938346',   // Iskcon Vrindavan
-  '0-9-9z5938349',   // Kashi Vishwanath
-  '0-9-9z5938347',   // Ma Naina Devi
-  '0-9-9z5938351',   // Mahavir Mandir Patna
-  '0-9-9z5938345',   // Dagdusheth Halwai Ganpati Mandir
-  '0-9-9z5946518'    // Patna Sahib
+  '0-9-9z51072894',
+  '0-9-9z51072893',
+  '0-9-9z51072892',
+  '0-9-9z51072556',
+  '0-9-9z51072553',
+  '0-9-zeeaction',
+  '0-9-zeeanmolcinema',
+  '0-9-bigganga',
+  '0-9-216',
+  '0-9-bigmagic_1786965389',
+  '0-9-zeeanmol',
+  '0-9-zeenews',
+  '0-9-aajtak',
+  '0-9-indiatoday',
+  '0-9-wion',
+  '0-9-zeebusiness',
+  '0-9-zeehindustan',
+  '0-9-zeerajasthannews',
+  '0-9-zeepunjabharyanahima',
+  '0-9-channel_265145625',
+  '0-9-zeemadhyapradeshchat',
+  '0-9-zeebiharjharkhand',
+  '0-9-zeekalinganews',
+  '0-9-9z583538',
+  '0-9-9z583537',
+  '0-9-zee24taas',
+  '0-9-zee24kalak',
+  '0-9-24ghantatv',
+  '0-9-251',
+  '0-9-257',
+  '0-9-258',
+  '0-9-259',
+  '0-9-260',
+  '0-9-378',
+  '0-9-200',
+  '0-9-201',
+  '0-9-261',
+  '0-9-9z5942782',
+  '0-9-9z5942783',
+  '0-9-9z5942784',
+  '0-9-9z5942785',
+  '0-9-9z5938346',
+  '0-9-9z5938349',
+  '0-9-9z5938347',
+  '0-9-9z5938351',
+  '0-9-9z5938345',
+  '0-9-9z5946518'
 ]);
 
 function getChannelStatus(ch) {
@@ -67,34 +56,26 @@ function getChannelStatus(ch) {
   const slug = (ch.slug || '').toUpperCase();
   const id = (ch.id || '').toLowerCase();
 
-  // Geo-Restricted International Feeds (Middle East, USA, UK, Canada, APAC, DE, Europe)
-  if (
-    title.includes(' ME') || title.includes(' USA') || title.includes(' UK') ||
+  const isGeo = title.includes(' ME') || title.includes(' USA') || title.includes(' UK') ||
     title.includes(' CANADA') || title.includes(' APAC') || title.includes(' DE') ||
     title.includes('GERMAN') || title.includes('FRENCH') || title.includes('BIOSKOP') ||
     title.includes('ALWAN') || title.includes('AFLAM') || title.includes('TINY POP') ||
     title.includes('GREAT!') || slug.includes('-ME') || slug.includes('-USA') ||
     slug.includes('-UK') || slug.includes('-CANADA') || slug.includes('-APAC') ||
     id.includes('zeecinemaintl') || id.includes('zeetvuk') || id.includes('zeetvapac') ||
-    id.includes('zeebioskop') || id.includes('zeealwan') || id.includes('zeeaflam')
-  ) {
-    return 'GEO_RESTRICTED';
-  }
+    id.includes('zeebioskop') || id.includes('zeealwan') || id.includes('zeeaflam');
 
-  // Inactive / discontinued feeds
-  if (
-    title.includes('SOMNATH TEMPLE') || title.includes('POP UP') || title.includes('GREAT! MOVIES')
-  ) {
-    return 'INACTIVE';
-  }
+  if (isGeo) return 'GEO_RESTRICTED';
 
-  // Pay-TV channels (Zee TV, Zee Cinema, &TV, Zee Marathi, etc.)
+  const isInactive = title.includes('SOMNATH TEMPLE') || title.includes('POP UP') || title.includes('GREAT! MOVIES');
+  if (isInactive) return 'INACTIVE';
+
   return 'PREMIUM';
 }
 
 function getRegionDetails(ch) {
   const t = (((ch && ch.title) || '') + ' ' + ((ch && ch.slug) || '')).toUpperCase();
-  if (t.includes(' ME') || t.includes('ALWAN') || t.includes('AFLAM')) return 'Middle East (UAE, Saudi Arabia, Gulf)';
+  if (t.includes(' ME') || t.includes('ALWAN') || t.includes('AFLAM')) return 'Middle East (UAE, Saudi Arabia)';
   if (t.includes(' USA')) return 'United States (USA)';
   if (t.includes(' UK')) return 'United Kingdom (UK)';
   if (t.includes(' CANADA')) return 'Canada';
@@ -105,7 +86,6 @@ function getRegionDetails(ch) {
   return 'International (Outside India)';
 }
 
-// Application State
 const state = {
   channels: [],
   filteredChannels: [],
@@ -113,7 +93,7 @@ const state = {
   favorites: new Set(JSON.parse(localStorage.getItem('zee5_favorites') || '[]')),
   activeLang: 'all',
   activeGenre: 'all',
-  activeType: 'verified', // Defaults to verified live channels!
+  activeType: 'verified',
   searchQuery: '',
   demoStreams: [],
   platformToken: null,
@@ -121,7 +101,6 @@ const state = {
   activeApiEndpoint: 'catalog'
 };
 
-// DOM Elements
 const elements = {
   video: document.getElementById('live-video'),
   playerWrapper: document.getElementById('player-wrapper'),
@@ -177,26 +156,18 @@ const elements = {
   btnCopyResponse: document.getElementById('btn-copy-response')
 };
 
-// Initialize Application
 document.addEventListener('DOMContentLoaded', async () => {
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
-
+  if (window.lucide) window.lucide.createIcons();
   setupEventListeners();
   await loadDemoStreams();
   await loadChannels();
   setupApiExplorer();
 });
 
-// ----------------------------------------------------
-// EVENT LISTENERS
-// ----------------------------------------------------
 function setupEventListeners() {
-  // Search
   elements.channelSearch.addEventListener('input', (e) => {
     state.searchQuery = e.target.value.trim().toLowerCase();
-    elements.clearSearch.style.display = state.searchQuery ? 'block' : 'none';
+    elements.clearSearch.style.display = state.searchQuery ? 'flex' : 'none';
     applyFilters();
   });
 
@@ -207,29 +178,26 @@ function setupEventListeners() {
     applyFilters();
   });
 
-  // Language filters
   elements.languageChips.addEventListener('click', (e) => {
-    if (e.target.classList.contains('chip')) {
-      elements.languageChips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      e.target.classList.add('active');
-      state.activeLang = e.target.dataset.lang;
-      applyFilters();
-    }
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    elements.languageChips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.activeLang = chip.dataset.lang;
+    applyFilters();
   });
 
-  // Genre filters
   elements.genreChips.addEventListener('click', (e) => {
-    if (e.target.classList.contains('chip')) {
-      elements.genreChips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      e.target.classList.add('active');
-      state.activeGenre = e.target.dataset.genre;
-      applyFilters();
-    }
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    elements.genreChips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.activeGenre = chip.dataset.genre;
+    applyFilters();
   });
 
-  // Channel Type buttons (all, free, premium, favorites)
   document.querySelectorAll('.type-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.activeType = btn.dataset.type;
@@ -237,7 +205,6 @@ function setupEventListeners() {
     });
   });
 
-  // Player buttons
   elements.btnTheater.addEventListener('click', () => {
     elements.playerWrapper.classList.toggle('theater');
   });
@@ -250,12 +217,9 @@ function setupEventListeners() {
   });
 
   elements.btnViewDetails.addEventListener('click', () => {
-    if (state.activeChannel) {
-      openChannelDetails(state.activeChannel.id);
-    }
+    if (state.activeChannel) openChannelDetails(state.activeChannel.id);
   });
 
-  // Unmute banner
   const unmuteBanner = document.getElementById('unmute-banner');
   if (unmuteBanner) {
     unmuteBanner.addEventListener('click', () => {
@@ -263,13 +227,13 @@ function setupEventListeners() {
       unmuteBanner.style.display = 'none';
     });
   }
+
   elements.video.addEventListener('volumechange', () => {
     if (unmuteBanner) {
       unmuteBanner.style.display = elements.video.muted ? 'flex' : 'none';
     }
   });
 
-  // Force play button on overlay
   const btnForce = document.getElementById('btn-force-stream-play');
   if (btnForce) {
     btnForce.addEventListener('click', () => {
@@ -278,11 +242,10 @@ function setupEventListeners() {
     });
   }
 
-  // Subscription lock overlay buttons
   const btnWatchFree = document.getElementById('btn-watch-free-live');
   if (btnWatchFree) {
     btnWatchFree.addEventListener('click', () => {
-      const freeCh = state.channels.find(c => c.id === '0-9-zeenews' || c.id === '0-9-aajtak' || c.id === '0-9-9z51072553' || c.id === '0-9-zeerajasthannews');
+      const freeCh = state.channels.find(c => c.id === '0-9-zeenews' || c.id === '0-9-9z51072553' || c.id === '0-9-aajtak' || c.id === '0-9-zeeaction');
       if (freeCh) selectChannel(freeCh, true);
     });
   }
@@ -294,13 +257,12 @@ function setupEventListeners() {
       const token = prompt('Enter your ZEE5 Subscriber User Token (from zee5.com login session):', current);
       if (token !== null) {
         localStorage.setItem('zee5_user_token', token.trim());
-        alert('ZEE5 Subscriber Token saved! Retrying stream...');
+        alert('Subscriber token saved! Retrying stream...');
         if (state.activeChannel) selectChannel(state.activeChannel, true);
       }
     });
   }
 
-  // Modals
   elements.btnCustomStream.addEventListener('click', () => {
     elements.customStreamModal.style.display = 'flex';
   });
@@ -325,7 +287,6 @@ function setupEventListeners() {
     }
   });
 
-  // Preset buttons in modal
   document.querySelectorAll('.preset-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       elements.customStreamUrl.value = btn.dataset.url;
@@ -340,7 +301,6 @@ function setupEventListeners() {
     elements.channelDetailsModal.style.display = 'none';
   });
 
-  // API Explorer Drawer
   elements.btnOpenApiExplorer.addEventListener('click', () => {
     elements.apiExplorerDrawer.classList.add('open');
   });
@@ -348,20 +308,15 @@ function setupEventListeners() {
     elements.apiExplorerDrawer.classList.remove('open');
   });
 
-  // Copy JSON in modal
-  document.getElementById('modal-copy-json').addEventListener('click', () => {
+  document.getElementById('modal-copy-json')?.addEventListener('click', () => {
     const text = document.getElementById('modal-raw-json').textContent;
     navigator.clipboard.writeText(text);
-    alert('JSON copied to clipboard!');
+    alert('Copied to clipboard');
   });
 }
 
-// ----------------------------------------------------
-// DATA LOADING
-// ----------------------------------------------------
 async function loadChannels() {
   try {
-    // Fetch multiple pages to get complete 113+ channels
     const [p1, p2] = await Promise.allSettled([
       fetch('/api/channels?page=1&page_size=60').then(r => r.json()),
       fetch('/api/channels?page=2&page_size=60').then(r => r.json())
@@ -375,14 +330,12 @@ async function loadChannels() {
       items = items.concat(p2.value.data.items);
     }
 
-    // Deduplicate by ID
     const map = new Map();
     items.forEach(ch => {
       if (!map.has(ch.id)) map.set(ch.id, ch);
     });
     state.channels = Array.from(map.values());
 
-    // Prioritize Verified Live channels first, then Premium, then Region-Locked
     state.channels.sort((a, b) => {
       const order = { 'VERIFIED_LIVE': 1, 'PREMIUM': 2, 'GEO_RESTRICTED': 3, 'INACTIVE': 4 };
       const statusA = order[getChannelStatus(a)] || 99;
@@ -390,22 +343,17 @@ async function loadChannels() {
       return statusA - statusB;
     });
 
-    console.log(`Loaded ${state.channels.length} live ZEE5 channels`);
-
     updateCounts();
     applyFilters();
 
-    // Select default channel: prioritize real 24x7 live channels (Zee News HD, Aaj Tak, Zee Cine Classic)
-    const defaultChannel = state.channels.find(c => c.id === '0-9-zeenews' || c.id === '0-9-aajtak' || c.id === '0-9-9z51072553' || c.id === '0-9-zeerajasthannews') || state.channels[0];
-    if (defaultChannel) {
-      selectChannel(defaultChannel, true);
-    }
+    const defaultChannel = state.channels.find(c => c.id === '0-9-zeenews' || c.id === '0-9-aajtak' || c.id === '0-9-9z51072553') || state.channels[0];
+    if (defaultChannel) selectChannel(defaultChannel, true);
   } catch (err) {
     console.error('Error loading channels:', err);
     elements.channelsGrid.innerHTML = `
       <div class="loading-grid-placeholder">
         <p style="color: #ef4444;">Failed to load live channels: ${err.message}</p>
-        <button class="btn secondary" onclick="loadChannels()">Retry Connection</button>
+        <button class="btn secondary" onclick="loadChannels()">Retry</button>
       </div>
     `;
   }
@@ -415,20 +363,14 @@ async function loadDemoStreams() {
   try {
     const res = await fetch('/api/live-channels');
     const data = await res.json();
-    if (data.success && data.channels) {
-      state.demoStreams = data.channels;
-    }
+    if (data.success && data.channels) state.demoStreams = data.channels;
   } catch (e) {
     console.warn('Could not load live channels:', e);
   }
 }
 
-// ----------------------------------------------------
-// FILTERING & SEARCH
-// ----------------------------------------------------
 function applyFilters() {
   state.filteredChannels = state.channels.filter(ch => {
-    // Search filter
     if (state.searchQuery) {
       const titleMatch = (ch.title || '').toLowerCase().includes(state.searchQuery);
       const genreMatch = (ch.genres || []).some(g => (g.value || '').toLowerCase().includes(state.searchQuery));
@@ -436,19 +378,16 @@ function applyFilters() {
       if (!titleMatch && !genreMatch && !tagMatch) return false;
     }
 
-    // Language filter
     if (state.activeLang !== 'all') {
       const langs = ch.languages || [];
       if (!langs.includes(state.activeLang)) return false;
     }
 
-    // Genre filter
     if (state.activeGenre !== 'all') {
       const genres = (ch.genres || []).map(g => g.value || g.id);
       if (!genres.includes(state.activeGenre)) return false;
     }
 
-    // Channel type filter
     const status = getChannelStatus(ch);
     if (state.activeType === 'favorites') {
       if (!state.favorites.has(ch.id)) return false;
@@ -493,16 +432,13 @@ function updateVisibleStats() {
   if (elements.countFavorites) elements.countFavorites.textContent = state.favorites.size;
 }
 
-// ----------------------------------------------------
-// CHANNELS GRID RENDERING
-// ----------------------------------------------------
 function renderChannelsGrid() {
   if (!state.filteredChannels.length) {
     elements.channelsGrid.innerHTML = `
       <div class="loading-grid-placeholder">
         <i data-lucide="tv-2" style="width: 48px; height: 48px; color: var(--text-dim);"></i>
-        <p>No channels found matching current criteria.</p>
-        <button class="btn secondary" onclick="resetFilters()">Reset All Filters</button>
+        <p>No channels found.</p>
+        <button class="btn secondary" onclick="resetFilters()">Reset Filters</button>
       </div>
     `;
     if (window.lucide) window.lucide.createIcons();
@@ -534,7 +470,6 @@ function renderChannelsGrid() {
       badgeText = 'OFFLINE';
     }
 
-    // Build image URLs
     const logoUrl = getChannelImageUrl(ch, 'channel_square') || getChannelImageUrl(ch, 'channel_web') || getChannelImageUrl(ch, 'list');
     const coverUrl = getChannelImageUrl(ch, 'cover') || getChannelImageUrl(ch, 'list') || logoUrl;
 
@@ -549,7 +484,7 @@ function renderChannelsGrid() {
             ${isCmaf ? '<span class="card-badge cmaf">CMAF</span>' : ''}
           </div>
 
-          <button class="card-fav-btn ${isFav ? 'active' : ''}" data-fav-id="${ch.id}" title="Toggle Favorite">
+          <button class="card-fav-btn ${isFav ? 'active' : ''}" data-fav-id="${ch.id}" title="Favorite">
             <i data-lucide="star" style="width: 15px; height: 15px; fill: ${isFav ? 'currentColor' : 'none'};"></i>
           </button>
 
@@ -578,19 +513,15 @@ function renderChannelsGrid() {
   elements.channelsGrid.innerHTML = html;
   if (window.lucide) window.lucide.createIcons();
 
-  // Attach card click handlers
   elements.channelsGrid.querySelectorAll('.channel-card').forEach(card => {
     card.addEventListener('click', (e) => {
       if (e.target.closest('.card-fav-btn')) return;
       const chId = card.dataset.id;
       const channel = state.channels.find(c => c.id === chId);
-      if (channel) {
-        selectChannel(channel, true);
-      }
+      if (channel) selectChannel(channel, true);
     });
   });
 
-  // Attach favorite button handlers
   elements.channelsGrid.querySelectorAll('.card-fav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -604,7 +535,7 @@ function renderChannelsGrid() {
 function resetFilters() {
   state.activeLang = 'all';
   state.activeGenre = 'all';
-  state.activeType = 'verified'; // Default to verified live channels
+  state.activeType = 'verified';
   state.searchQuery = '';
   elements.channelSearch.value = '';
   elements.clearSearch.style.display = 'none';
@@ -616,14 +547,10 @@ function resetFilters() {
   applyFilters();
 }
 
-// ----------------------------------------------------
-// CHANNEL SELECTION & PLAYER ENGINE
-// ----------------------------------------------------
 async function selectChannel(channel, autoPlay = true) {
   state.activeChannel = channel;
   const status = getChannelStatus(channel);
 
-  // Update Player metadata UI
   elements.playerTitle.textContent = channel.title;
   const genre = channel.genres && channel.genres[0] ? channel.genres[0].value : 'Live TV';
   const lang = channel.languages && channel.languages[0] ? channel.languages[0].toUpperCase() : 'HI';
@@ -650,19 +577,16 @@ async function selectChannel(channel, autoPlay = true) {
 
   updateFavButtonState();
 
-  // Highlight in grid
   document.querySelectorAll('.channel-card').forEach(c => {
     c.classList.toggle('active-playing', c.dataset.id === channel.id);
   });
 
-  // Scroll to player smoothly
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   const lockOverlay = document.getElementById('subscription-lock-overlay');
   if (lockOverlay) lockOverlay.style.display = 'none';
 
-  // Query live stream from SPAPI via server proxy
-  showVideoStatus(`Connecting to live broadcast for ${channel.title}...`);
+  showVideoStatus(`Connecting to ${channel.title}...`);
   try {
     const savedToken = localStorage.getItem('zee5_user_token') || '';
     const tokenQuery = savedToken ? `?token=${encodeURIComponent(savedToken)}` : '';
@@ -678,7 +602,6 @@ async function selectChannel(channel, autoPlay = true) {
       playHlsStream(streamData.liveStreamUrl, autoPlay);
       return;
     } else {
-      console.warn(`Channel ${channel.title} SPAPI status:`, streamData.errorMessage || streamData.errorCode);
       hideVideoStatus();
       if (state.hls) {
         state.hls.destroy();
@@ -695,7 +618,7 @@ async function selectChannel(channel, autoPlay = true) {
         if (lockOverlay) {
           lockOverlay.style.display = 'flex';
           document.getElementById('lock-overlay-title').textContent = `${channel.title} is Region-Locked`;
-          document.getElementById('lock-overlay-desc').textContent = `ZEE5 only broadcasts this channel to viewers in ${getRegionDetails(channel)} (Error 607: Not available in your country). You can freely stream 47+ verified live channels in India (Zee News, Aaj Tak, Zee Cine Classic, Zee Action, etc.)!`;
+          document.getElementById('lock-overlay-desc').textContent = `ZEE5 only broadcasts this channel to viewers in ${getRegionDetails(channel)} (Error 607). Stream 47+ verified live channels in India directly!`;
         }
       } else {
         elements.playerDrmBadge.textContent = 'SUBSCRIPTION LOCKED (ERROR 3804)';
@@ -705,53 +628,14 @@ async function selectChannel(channel, autoPlay = true) {
         if (lockOverlay) {
           lockOverlay.style.display = 'flex';
           document.getElementById('lock-overlay-title').textContent = `${channel.title} is a Premium Pay-TV Channel`;
-          document.getElementById('lock-overlay-desc').textContent = `ZEE5 encrypts this channel with Widevine DRM for active paying subscribers (Error 3804: Subscription not found). You can freely stream 47+ open channels without a subscription!`;
+          document.getElementById('lock-overlay-desc').textContent = `ZEE5 encrypts this channel with Widevine DRM for active paying subscribers (Error 3804). You can freely stream 47+ open channels without a subscription!`;
         }
       }
     }
   } catch (err) {
-    console.error('Error fetching live channel stream:', err);
+    console.error('Stream error:', err);
     hideVideoStatus();
   }
-}
-
-function openDemoStreamsSelector() {
-  const options = (state.demoStreams || []).map((s, idx) => `${idx + 1}. ${s.title} (${s.badge})`).join('\n');
-  const pick = prompt(`Select a Verified 100% Real Live ZEE5 Channel to play:\n\n${options}\n\nEnter number (1-${state.demoStreams.length}):`, '1');
-  if (pick) {
-    const idx = parseInt(pick, 10) - 1;
-    if (state.demoStreams[idx]) {
-      const s = state.demoStreams[idx];
-      const ch = state.channels.find(c => c.id === s.id) || {
-        id: s.id,
-        title: s.title,
-        genres: [{ value: s.genre }],
-        languages: [s.lang]
-      };
-      selectChannel(ch, true);
-    }
-  }
-}
-
-function getMatchingDemoFeed(channel) {
-  const defaultUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-  if (!state.demoStreams || !state.demoStreams.length) {
-    return { url: defaultUrl };
-  }
-
-  const title = (channel?.title || '').toLowerCase();
-  const genre = channel?.genres && channel.genres[0] ? channel.genres[0].value.toLowerCase() : '';
-
-  if (genre.includes('movie')) {
-    return state.demoStreams.find(s => s.id === 'apple-bipbop') || state.demoStreams[0];
-  }
-  if (genre.includes('lifestyle')) {
-    return state.demoStreams.find(s => s.id === 'apple-fmp4') || state.demoStreams[0];
-  }
-  if (title.includes('zee') || title.includes('hd')) {
-    return state.demoStreams.find(s => s.id === 'akamai-live') || state.demoStreams[0];
-  }
-  return state.demoStreams[0] || { url: defaultUrl };
 }
 
 let streamSafetyTimer = null;
@@ -760,12 +644,8 @@ function playHlsStream(streamUrl, autoPlay = true) {
   showVideoStatus('Connecting to Live HLS Feed...');
   
   if (streamSafetyTimer) clearTimeout(streamSafetyTimer);
-  // Guarantee overlay disappears after max 2.5 seconds regardless of network delay
-  streamSafetyTimer = setTimeout(() => {
-    hideVideoStatus();
-  }, 2500);
+  streamSafetyTimer = setTimeout(() => hideVideoStatus(), 2500);
 
-  // Muted required by browser autoplay policy
   elements.video.muted = true;
 
   if (state.hls) {
@@ -773,14 +653,11 @@ function playHlsStream(streamUrl, autoPlay = true) {
     state.hls = null;
   }
 
-  // Hook direct video events to dismiss spinner as soon as buffer is ready
   elements.video.onplaying = () => {
     hideVideoStatus();
     if (streamSafetyTimer) clearTimeout(streamSafetyTimer);
   };
-  elements.video.oncanplay = () => {
-    hideVideoStatus();
-  };
+  elements.video.oncanplay = () => hideVideoStatus();
 
   if (Hls.isSupported()) {
     const hls = new Hls({
@@ -801,22 +678,15 @@ function playHlsStream(streamUrl, autoPlay = true) {
         const highest = data.levels[data.levels.length - 1];
         elements.playerQualityBadge.textContent = `${highest.height || 1080}p HD`;
       }
-      if (autoPlay) {
-        elements.video.play().catch(e => {
-          console.log('Autoplay policy caught:', e.message);
-        });
-      }
+      if (autoPlay) elements.video.play().catch(() => {});
     });
 
     hls.on(Hls.Events.ERROR, (event, data) => {
-      console.warn('HLS Error event:', data.type, data.details);
       if (data.fatal) {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
-            console.warn('Network error: falling back to reliable live feed...');
             hls.destroy();
             state.hls = null;
-            // Fallback to ultra-reliable live stream
             if (streamUrl !== 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8') {
               playHlsStream('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', true);
             } else {
@@ -824,7 +694,6 @@ function playHlsStream(streamUrl, autoPlay = true) {
             }
             break;
           case Hls.ErrorTypes.MEDIA_ERROR:
-            console.warn('Media error, attempting recovery...');
             hls.recoverMediaError();
             break;
           default:
@@ -835,7 +704,6 @@ function playHlsStream(streamUrl, autoPlay = true) {
       }
     });
   } else if (elements.video.canPlayType('application/vnd.apple.mpegurl')) {
-    // Native Safari HLS
     elements.video.src = streamUrl;
     elements.video.addEventListener('loadedmetadata', () => {
       hideVideoStatus();
@@ -894,9 +762,6 @@ function toggleFavorite(id) {
   localStorage.setItem('zee5_favorites', JSON.stringify(Array.from(state.favorites)));
 }
 
-// ----------------------------------------------------
-// CHANNEL DETAILS & LICENSING MODAL
-// ----------------------------------------------------
 async function openChannelDetails(id) {
   const ch = state.channels.find(c => c.id === id) || state.activeChannel;
   if (!ch) return;
@@ -912,9 +777,8 @@ async function openChannelDetails(id) {
   document.getElementById('modal-channel-logo').src = logoUrl;
 
   const rawBox = document.getElementById('modal-raw-json');
-  rawBox.textContent = 'Querying gwapi.zee5.com/contentlight/details and content/details_with_licences...';
+  rawBox.textContent = 'Loading details...';
 
-  // Render Tags
   const tagsContainer = document.getElementById('modal-detail-tags');
   tagsContainer.innerHTML = (ch.tags || []).map(t => `<span class="tag-pill">${escapeHtml(t)}</span>`).join('') || 'None';
 
@@ -925,7 +789,7 @@ async function openChannelDetails(id) {
 
     if (data.channelDetails) {
       const cd = data.channelDetails;
-      document.getElementById('modal-detail-desc').textContent = cd.description || 'No description provided by broadcaster.';
+      document.getElementById('modal-detail-desc').textContent = cd.description || 'No description provided.';
       document.getElementById('modal-detail-owner').textContent = cd.content_owner || 'Zee Entertainment Enterprises Ltd';
       document.getElementById('modal-detail-audio').textContent = (cd.audio_languages || []).join(', ').toUpperCase() || 'Hindi';
       if (cd.licensing) {
@@ -937,10 +801,9 @@ async function openChannelDetails(id) {
       document.getElementById('modal-detail-licensing').textContent += ` | Rating: ${data.licenses.content_age_rating || 'U/A'}`;
     }
   } catch (err) {
-    rawBox.textContent = `Error fetching live details: ${err.message}`;
+    rawBox.textContent = `Error: ${err.message}`;
   }
 
-  // Setup test spapi button
   elements.btnTestSpapiActive.onclick = () => {
     elements.channelDetailsModal.style.display = 'none';
     elements.apiExplorerDrawer.classList.add('open');
@@ -948,9 +811,6 @@ async function openChannelDetails(id) {
   };
 }
 
-// ----------------------------------------------------
-// INTERACTIVE ZEE5 API EXPLORER
-// ----------------------------------------------------
 function setupApiExplorer() {
   document.querySelectorAll('.exp-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -964,10 +824,9 @@ function setupApiExplorer() {
 
   elements.btnCopyResponse.addEventListener('click', () => {
     navigator.clipboard.writeText(elements.apiResponseOutput.textContent);
-    alert('API Response copied to clipboard!');
+    alert('Copied');
   });
 
-  // Select initial tab
   selectApiTab('catalog');
 }
 
@@ -993,7 +852,7 @@ function selectApiTab(endpoint, optionalChannelId) {
     case 'token':
       elements.apiMethod.textContent = 'GET';
       elements.apiTargetUrl.value = 'https://launchapi.zee5.com/token/platform_tokens.php?platform_name=web_app';
-      config.innerHTML = `<span style="color: var(--text-muted);">Generates real-time JWT platform token for authentication across ZEE5 APIs.</span>`;
+      config.innerHTML = `<span style="color: var(--text-muted);">Generates platform token for authentication across ZEE5 APIs.</span>`;
       break;
 
     case 'channel_details':
@@ -1014,7 +873,7 @@ function selectApiTab(endpoint, optionalChannelId) {
     case 'country':
       elements.apiMethod.textContent = 'GET';
       elements.apiTargetUrl.value = 'https://xtra.zee5.com/country';
-      config.innerHTML = `<span style="color: var(--text-muted);">Identifies geographic IP location, coordinates, and country codes for licensing.</span>`;
+      config.innerHTML = `<span style="color: var(--text-muted);">Identifies geographic IP location and country codes.</span>`;
       break;
 
     case 'spapi':
@@ -1026,7 +885,7 @@ function selectApiTab(endpoint, optionalChannelId) {
         <br>
         <label>Playback Endpoint Method:</label>
         <select id="cfg-spapi-method" style="background: rgba(255,255,255,0.1); color: #fff; padding: 4px 8px; border-radius: 4px;">
-          <option value="POST">POST (Standard)</option>
+          <option value="POST">POST</option>
           <option value="GET">GET</option>
         </select>
       `;
@@ -1050,7 +909,7 @@ function selectApiTab(endpoint, optionalChannelId) {
 async function executeActiveApi() {
   elements.apiStatusCode.className = 'status-pill status-ready';
   elements.apiStatusCode.textContent = 'Fetching...';
-  elements.apiResponseOutput.textContent = 'Executing request to ZEE5 backend...';
+  elements.apiResponseOutput.textContent = 'Executing request...';
 
   const startTime = Date.now();
 
@@ -1109,9 +968,6 @@ async function executeActiveApi() {
   }
 }
 
-// ----------------------------------------------------
-// UTILITIES
-// ----------------------------------------------------
 function getChannelImageUrl(channel, type) {
   if (!channel) return '';
   const imgObj = channel.image || {};
